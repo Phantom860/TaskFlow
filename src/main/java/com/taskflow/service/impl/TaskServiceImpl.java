@@ -1,7 +1,9 @@
 package com.taskflow.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.taskflow.dto.CreateTaskRequest;
+import com.taskflow.dto.Result;
 import com.taskflow.entity.Task;
 import com.taskflow.entity.TaskDependency;
 import com.taskflow.mapper.TaskDependencyMapper;
@@ -61,5 +63,12 @@ public class TaskServiceImpl implements TaskService {
         // 删除任务本身
         int deleted = taskMapper.deleteById(id);
         return deleted > 0;
+    }
+
+    @Override
+    public Result listTasks(int page, int size) {
+        Page<Task> pageInfo = new Page<>(page, size);
+        Page<Task> resultPage = taskMapper.selectPage(pageInfo, null);
+        return Result.ok(resultPage.getRecords(), resultPage.getTotal());
     }
 }

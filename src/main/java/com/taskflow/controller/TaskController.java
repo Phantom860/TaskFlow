@@ -25,6 +25,22 @@ public class TaskController {
     }
 
     /**
+     * 获取所有任务列表
+     */
+    @GetMapping("/list")
+    public Result listTasks(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            return taskService.listTasks(page, size);
+        } catch (Exception e) {
+            return Result.fail("查询任务失败：" + e.getMessage());
+        }
+    }
+
+
+    /**
      * 创建任务
      */
     @PostMapping("/add")

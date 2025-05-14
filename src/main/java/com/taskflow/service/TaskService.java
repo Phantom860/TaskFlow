@@ -1,6 +1,7 @@
 package com.taskflow.service;
 
 import com.taskflow.dto.CreateTaskRequest;
+import com.taskflow.dto.Result;
 import com.taskflow.entity.Task;
 import java.util.List;
 
@@ -10,5 +11,7 @@ public interface TaskService {
     void createTask(CreateTaskRequest request);
 
     boolean deleteTaskById(Long id);
+
+    Result listTasks(int page, int size);
 }
 
