@@ -18,7 +18,9 @@ mybatis-plus:
 
 logging:
   level:
-    com.taskflow: debug
+
+    org.springframework.jdbc.core: WARN  # ?? JDBC ????? WARN
+    org.springframework.scheduling: INFO  # ?????????????? INFO
 
 
 

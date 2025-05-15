@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @Data
 @TableName("task_logs")
 public class TaskLog implements Serializable {
-    @TableId
-    private Long id;
+    @TableId(value = "id")
+    private Long logId;
 
     private Long taskId;
     private String message;

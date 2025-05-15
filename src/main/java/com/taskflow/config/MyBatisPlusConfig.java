@@ -1,4 +1,4 @@
-package com.taskflow.dto;
+package com.taskflow.config;
 
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;

@@ -13,5 +13,9 @@ public interface TaskService {
     boolean deleteTaskById(Long id);
 
     Result listTasks(int page, int size);
+
+    boolean cancelTask(Long taskId);
+
+    String retryTask(Long taskId);
 }
 

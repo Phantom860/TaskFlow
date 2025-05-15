@@ -6,6 +6,7 @@ import com.taskflow.dto.CreateTaskRequest;
 import com.taskflow.dto.Result;
 import com.taskflow.entity.Task;
 import com.taskflow.entity.TaskDependency;
+import com.taskflow.entity.TaskStatus;
 import com.taskflow.mapper.TaskDependencyMapper;
 import com.taskflow.mapper.TaskMapper;
 import com.taskflow.service.TaskService;
@@ -30,13 +31,18 @@ public class TaskServiceImpl implements TaskService {
         return taskMapper.selectList(new QueryWrapper<>());
     }
 
+    /**
+     * 创建任务
+     *
+     * @param request 任务创建请求
+     */
     @Override
     public void createTask(CreateTaskRequest request) {
         // 1. 创建任务对象
         Task task = new Task();
         task.setName(request.getName());
         task.setPriority(request.getPriority());
-        task.setStatus("WAITING"); // 初始状态
+        task.setStatus(TaskStatus.WAITING.name()); // 初始状态
         task.setCreateTime(LocalDateTime.now());
         task.setRetryCount(0);
 
@@ -54,6 +60,12 @@ public class TaskServiceImpl implements TaskService {
         }
     }
 
+    /**
+     * 删除任务
+     *
+     * @param id 任务 ID
+     * @return 是否删除成功
+     */
     @Override
     public boolean deleteTaskById(Long id) {
         // 先删除与该任务相关的依赖关系
@@ -65,10 +77,79 @@ public class TaskServiceImpl implements TaskService {
         return deleted > 0;
     }
 
+    /**
+     * 列出所有任务
+     *
+     * @param page 页码
+     * @param size 每页大小
+     * @return 任务列表
+     */
     @Override
     public Result listTasks(int page, int size) {
         Page<Task> pageInfo = new Page<>(page, size);
         Page<Task> resultPage = taskMapper.selectPage(pageInfo, null);
         return Result.ok(resultPage.getRecords(), resultPage.getTotal());
     }
+
+    /**
+     * 取消任务
+     *
+     * @param taskId 任务 ID
+     * @return 是否取消成功
+     */
+    @Override
+    public boolean cancelTask(Long taskId) {
+        Task task = taskMapper.selectById(taskId);
+        if (task == null) return false;
+
+        if (TaskStatus.WAITING.name().equals(task.getStatus()) || TaskStatus.RUNNING.name().equals(task.getStatus())) {
+            task.setStatus(TaskStatus.CANCELED.name());
+            task.setEndTime(LocalDateTime.now());
+            taskMapper.updateById(task);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 重试任务
+     *
+     * @param taskId 任务 ID
+     * @return 重试结果
+     */
+    @Override
+    public String retryTask(Long taskId) {
+        Task task = taskMapper.selectById(taskId);
+        if (task == null) {
+            return "TASK_NOT_FOUND";
+        }
+
+        if (TaskStatus.SUCCESS.name().equals(task.getStatus())) {
+            return "ALREADY_SUCCESS";
+        }
+
+        int retryCount = task.getRetryCount() != null ? task.getRetryCount() : 0;
+        if (retryCount >= 3) {
+            return "RETRY_LIMIT_REACHED";
+        }
+
+        task.setRetryCount(retryCount + 1);
+        task.setStartTime(LocalDateTime.now());
+
+        //30%概率成功
+        boolean isSuccess = Math.random() < 0.3;
+
+        if (isSuccess) {
+            task.setStatus(TaskStatus.SUCCESS.name());
+            task.setEndTime(LocalDateTime.now());
+            taskMapper.updateById(task);
+            return "RETRY_SUCCESS";
+        } else {
+            task.setStatus(TaskStatus.FAILED.name());
+            task.setEndTime(LocalDateTime.now());
+            taskMapper.updateById(task);
+            return retryCount + 1 >= 3 ? "RETRY_LIMIT_REACHED" : "RETRY_FAILED";
+        }
+    }
+
 }
