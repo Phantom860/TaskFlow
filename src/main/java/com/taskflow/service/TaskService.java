@@ -17,5 +17,7 @@ public interface TaskService {
     boolean cancelTask(Long taskId);
 
     String retryTask(Long taskId);
+
+    boolean clearAllTasks();
 }
 

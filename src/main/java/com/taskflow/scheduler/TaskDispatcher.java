@@ -5,6 +5,7 @@ import com.taskflow.entity.Task;
 import com.taskflow.entity.TaskStatus;
 import com.taskflow.mapper.TaskDependencyMapper;
 import com.taskflow.mapper.TaskMapper;
+import com.taskflow.service.TaskLogService;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ public class TaskDispatcher {
 
     @Resource
     private TaskDependencyMapper dependencyMapper;
+
+    @Resource
+    private TaskLogService taskLogService;
 
     @Resource(name = "taskExecutor")
     private Executor taskExecutor;
@@ -57,6 +61,7 @@ public class TaskDispatcher {
                 Task latest = taskMapper.selectById(task.getTaskId());
                 if (!TaskStatus.WAITING.name().equals(latest.getStatus())) {
                     System.out.println("任务 " + task.getTaskId() + " 已取消或已处理，跳过调度");
+                    taskLogService.saveLog(task.getTaskId(), "任务已取消或已处理，跳过调度");
                     return;
                 }
 
@@ -65,6 +70,7 @@ public class TaskDispatcher {
                 task.setStatus(TaskStatus.RUNNING.name());
                 task.setStartTime(LocalDateTime.now());
                 taskMapper.updateById(task);
+                taskLogService.saveLog(task.getTaskId(), "任务开始执行");
 
                 // 模拟执行过程（分成若干小段，中途检查是否被取消）
                 int totalMillis = 1000;
@@ -76,12 +82,13 @@ public class TaskDispatcher {
                     Task check = taskMapper.selectById(task.getTaskId());
                     if (TaskStatus.CANCELED.name().equals(check.getStatus())) {
                         System.out.println("任务已被取消：" + task.getName());
+                        taskLogService.saveLog(task.getTaskId(), "任务执行中被取消");
                         return;
                     }
                 }
 
                 // 模拟失败：30% 概率
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.9) {
                     throw new RuntimeException("模拟失败");
                 }
 
@@ -90,15 +97,19 @@ public class TaskDispatcher {
                 task.setEndTime(LocalDateTime.now());
                 taskMapper.updateById(task);
                 System.out.println("任务成功：" + task.getName());
+                taskLogService.saveLog(task.getTaskId(), "任务执行成功");
 
             } catch (Exception e) {
                 task.setStatus(TaskStatus.FAILED.name());
                 task.setEndTime(LocalDateTime.now());
                 taskMapper.updateById(task);
                 System.err.println("任务失败：" + task.getName());
+                taskLogService.saveLog(task.getTaskId(), "任务执行失败：" + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
+
+
 
 }

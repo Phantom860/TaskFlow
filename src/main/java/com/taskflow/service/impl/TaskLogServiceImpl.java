@@ -5,9 +5,9 @@ import com.taskflow.entity.TaskLog;
 import com.taskflow.mapper.TaskLogMapper;
 import com.taskflow.service.TaskLogService;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,5 +22,13 @@ public class TaskLogServiceImpl implements TaskLogService {
                         .eq("task_id", taskId)
                         .orderByAsc("time")
         );
+    }
+
+    public void saveLog(Long taskId, String message) {
+        TaskLog log = new TaskLog();
+        log.setTaskId(taskId);
+        log.setMessage(message);
+        log.setTime(LocalDateTime.now());
+        taskLogMapper.insert(log);
     }
 }

@@ -72,6 +72,20 @@ public class TaskController {
     }
 
     /**
+     * 清空任务列表
+     */
+    @DeleteMapping("/clear")
+    public Result clearAllTasks() {
+        boolean success = taskService.clearAllTasks();
+        if (success) {
+            return Result.ok("任务列表已清空");
+        } else {
+            return Result.fail("任务清空失败");
+        }
+    }
+
+
+    /**
      * 取消任务
      */
     @PostMapping("/cancel/{taskId}")
@@ -102,7 +116,10 @@ public class TaskController {
         }
     }
 
-    @GetMapping("/{taskId}")
+    /**
+     * 获取任务日志
+     */
+    @GetMapping("/log/{taskId}")
     public Result getLogsByTaskId(@PathVariable Long taskId) {
         List<TaskLog> logs = taskLogService.getLogsByTaskId(taskId);
         return Result.ok(logs);

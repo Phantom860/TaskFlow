@@ -8,8 +8,11 @@ import com.taskflow.entity.Task;
 import com.taskflow.entity.TaskDependency;
 import com.taskflow.entity.TaskStatus;
 import com.taskflow.mapper.TaskDependencyMapper;
+import com.taskflow.mapper.TaskLogMapper;
 import com.taskflow.mapper.TaskMapper;
+import com.taskflow.service.TaskLogService;
 import com.taskflow.service.TaskService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +22,17 @@ import java.util.List;
 @Service
 public class TaskServiceImpl implements TaskService {
 
-    @Autowired
+    @Resource
     private TaskMapper taskMapper;
 
-    @Autowired
+    @Resource
     private TaskDependencyMapper dependencyMapper;
+
+    @Resource
+    private TaskLogService taskLogService;
+
+    @Resource
+    private TaskLogMapper taskLogMapper;
 
     @Override
     public List<Task> getAllTasks() {
@@ -125,11 +134,14 @@ public class TaskServiceImpl implements TaskService {
         }
 
         if (TaskStatus.SUCCESS.name().equals(task.getStatus())) {
+            taskLogService.saveLog(taskId, "任务已成功，无需重试");
             return "ALREADY_SUCCESS";
+
         }
 
         int retryCount = task.getRetryCount() != null ? task.getRetryCount() : 0;
         if (retryCount >= 3) {
+            taskLogService.saveLog(taskId, "超过最大重试次数，任务彻底失败");
             return "RETRY_LIMIT_REACHED";
         }
 
@@ -143,12 +155,27 @@ public class TaskServiceImpl implements TaskService {
             task.setStatus(TaskStatus.SUCCESS.name());
             task.setEndTime(LocalDateTime.now());
             taskMapper.updateById(task);
+            taskLogService.saveLog(taskId, "用户点击重试：第 " + (retryCount + 1) + " 次成功");
             return "RETRY_SUCCESS";
         } else {
             task.setStatus(TaskStatus.FAILED.name());
             task.setEndTime(LocalDateTime.now());
             taskMapper.updateById(task);
+            taskLogService.saveLog(taskId, "用户点击重试：第 " + (retryCount + 1) + " 次失败");
             return retryCount + 1 >= 3 ? "RETRY_LIMIT_REACHED" : "RETRY_FAILED";
+        }
+    }
+
+    @Override
+    public boolean clearAllTasks() {
+        try {
+            taskMapper.delete(null);
+            taskLogMapper.delete(null);
+            dependencyMapper.delete(null);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
