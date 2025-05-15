@@ -54,6 +54,8 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(TaskStatus.WAITING.name()); // 初始状态
         task.setCreateTime(LocalDateTime.now());
         task.setRetryCount(0);
+        task.setDuration(request.getDuration() != null ? request.getDuration() : 10000);
+        task.setFailRate(request.getFailRate() != null ? request.getFailRate() : 0.3);
 
         // 2. 插入任务
         taskMapper.insert(task);

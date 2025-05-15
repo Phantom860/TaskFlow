@@ -26,5 +26,8 @@ public class Task implements Serializable {
     private LocalDateTime endTime;
 
     private Integer retryCount;
+    private Integer progress; // 任务进度百分比 (0~100)
+    private Integer duration;   // 耗时，单位毫秒（默认 10000）
+    private Double failRate;    // 失败概率（默认 0.3）
 }
 

@@ -73,8 +73,8 @@ public class TaskDispatcher {
                 taskLogService.saveLog(task.getTaskId(), "任务开始执行");
 
                 // 模拟执行过程（分成若干小段，中途检查是否被取消）
-                int totalMillis = 1000;
-                int interval = 1000; // 每隔1秒检查一次
+                int totalMillis = task.getDuration() != null ? task.getDuration() : 10000;
+                int interval = totalMillis / 100;
                 for (int elapsed = 0; elapsed < totalMillis; elapsed += interval) {
                     Thread.sleep(interval);
 
@@ -85,15 +85,22 @@ public class TaskDispatcher {
                         taskLogService.saveLog(task.getTaskId(), "任务执行中被取消");
                         return;
                     }
+
+                    // 每次循环更新任务进度
+                    int progress = Math.min((elapsed + interval) * 100 / totalMillis, 100);
+                    task.setProgress(progress);
+                    taskMapper.updateById(task);
                 }
 
-                // 模拟失败：30% 概率
-                if (Math.random() < 0.9) {
+                // 模拟失败：默认 30% 概率
+                double failRate = task.getFailRate() != null ? task.getFailRate() : 0.3;
+                if (Math.random() < failRate) {
                     throw new RuntimeException("模拟失败");
                 }
 
                 // 执行成功
                 task.setStatus(TaskStatus.SUCCESS.name());
+                task.setProgress(100); // 成功设为100%
                 task.setEndTime(LocalDateTime.now());
                 taskMapper.updateById(task);
                 System.out.println("任务成功：" + task.getName());
@@ -104,6 +111,7 @@ public class TaskDispatcher {
                 task.setEndTime(LocalDateTime.now());
                 taskMapper.updateById(task);
                 System.err.println("任务失败：" + task.getName());
+                task.setProgress(0); // 失败设为0%
                 taskLogService.saveLog(task.getTaskId(), "任务执行失败：" + e.getMessage());
                 e.printStackTrace();
             }
